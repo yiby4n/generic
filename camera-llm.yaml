@@ -1,0 +1,53 @@
+alias: Front door - detect motion and LLM with Cooldown
+description: ""
+triggers:
+  - type: motion
+    entity_id: camera.front_door_doorbell_high_resolution_channel
+    domain: binary_sensor
+    trigger: device
+conditions:
+  - condition: template
+    value_template: >-
+      {% set last_run =
+      state_attr('automation.front_door_detect_motion_and_llm',
+      'last_triggered') %} {% if last_run %}
+        {{ (now() - last_run).total_seconds() > 120 }}
+      {% else %}
+        {{ true }}
+      {% endif %}
+actions:
+  - metadata: {}
+    data:
+      filename: /config/www/tmp/doorbell_snap_person.jpg
+    target:
+      entity_id:
+        - camera.front_door_doorbell_high_resolution_channel
+    action: camera.snapshot
+  - metadata: {}
+    data:
+      remember: false
+      use_memory: false
+      include_filename: true
+      target_width: 1280
+      max_tokens: 100
+      temperature: 0.2
+      generate_title: false
+      expose_images: false
+      image_file: /config/www/tmp/doorbell_snap_person.jpg
+      provider: 01JSWJYD1F4R1RMZM8MTEE79VF
+      message: >-
+        Describe the image in one second. If you see a person, describe what they look like. Make the description sarcastic and describe what they're doing more than what they are wearing.
+    response_variable: response
+    action: llmvision.image_analyzer
+  - data:
+      title: Front Door Motion
+      message: "{{ response.response_text }}"
+      data:
+        image: /local/tmp/doorbell_snap_person.jpg
+        actions:
+          - action: URI
+            title: Open Camera
+            uri: shortcuts://run-shortcut?name=Protect
+            icon: sfsymbols:camera.fill
+    action: notify.mobile_app_iphone
+mode: single
