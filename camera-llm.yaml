@@ -2,7 +2,7 @@ alias: Front door - detect motion and LLM with Cooldown
 description: ""
 triggers:
   - type: motion
-    entity_id: camera.front_door_doorbell_high_resolution_channel
+    entity_id: switch.front_door_doorbell_detections_motion
     domain: binary_sensor
     trigger: device
 conditions:
